@@ -17,6 +17,8 @@ TARGET_USER="ubuntu"
 DOT_JAY_PROFILE="jlx-cloud"
 DOT_JAY_REPO="${DEFAULT_DOT_JAY_REPO}"
 DOT_JAY_REF="${DEFAULT_DOT_JAY_REF}"
+DOT_JAY_BUNDLE_URL="${DEFAULT_DOT_JAY_BUNDLE_URL}"
+DOT_JAY_BUNDLE_SHA256="${DEFAULT_DOT_JAY_BUNDLE_SHA256}"
 SWAP_GIB=2
 
 usage() {
@@ -30,6 +32,10 @@ Options:
   --profile PROFILE    jlx-cloud or jlx-cloud-host.
   --dot-jay-repo URL   dot-jay Git repository.
   --dot-jay-ref REF    Pinned dot-jay commit or release ref.
+  --dot-jay-bundle-url URL
+                       Released dot-jay runtime bundle URL.
+  --dot-jay-bundle-sha256 SHA256
+                       Expected runtime bundle checksum.
   --swap-gib SIZE      Emergency swap-file size, 0 through 16 (default: 2).
   -h, --help           Show this help.
 EOF
@@ -66,6 +72,16 @@ while (($#)); do
       DOT_JAY_REF="$2"
       shift 2
       ;;
+    --dot-jay-bundle-url)
+      [[ $# -ge 2 ]] || fail "--dot-jay-bundle-url requires a value"
+      DOT_JAY_BUNDLE_URL="$2"
+      shift 2
+      ;;
+    --dot-jay-bundle-sha256)
+      [[ $# -ge 2 ]] || fail "--dot-jay-bundle-sha256 requires a value"
+      DOT_JAY_BUNDLE_SHA256="$2"
+      shift 2
+      ;;
     --swap-gib)
       [[ $# -ge 2 ]] || fail "--swap-gib requires a value"
       SWAP_GIB="$2"
@@ -91,6 +107,8 @@ done
   --profile "${DOT_JAY_PROFILE}" \
   --dot-jay-repo "${DOT_JAY_REPO}" \
   --dot-jay-ref "${DOT_JAY_REF}" \
+  --dot-jay-bundle-url "${DOT_JAY_BUNDLE_URL}" \
+  --dot-jay-bundle-sha256 "${DOT_JAY_BUNDLE_SHA256}" \
   --firewall external
 
 for command_name in awk fallocate mkswap nproc swapon sysctl; do

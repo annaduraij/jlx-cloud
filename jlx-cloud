@@ -16,15 +16,27 @@ PROVIDER="ubuntu"
 TARGET_USER="ubuntu"
 HOST_MODE=false
 DRY_RUN=false
+COMMAND="provision"
 DOT_JAY_REPO="${DEFAULT_DOT_JAY_REPO}"
 DOT_JAY_REF="${DEFAULT_DOT_JAY_REF}"
+DOT_JAY_BUNDLE_URL="${DEFAULT_DOT_JAY_BUNDLE_URL}"
+DOT_JAY_BUNDLE_SHA256="${DEFAULT_DOT_JAY_BUNDLE_SHA256}"
+GIT_SOURCE_EXPLICIT=false
+BUNDLE_SOURCE_EXPLICIT=false
 SWAP_GIB=2
+
+if [[ "${1:-}" == "render" ]]; then
+  COMMAND="render"
+  shift
+fi
 
 usage() {
   cat <<'EOF'
 Usage: jlx-cloud [options]
+       jlx-cloud render [options]
 
 Provision an Ubuntu cloud VM and apply its pinned dot-jay profile.
+Use "render" to generate paste-ready cloud-init YAML without changing this host.
 
 Options:
   --host                 Use the jlx-cloud-host profile with jq and htop.
@@ -34,6 +46,10 @@ Options:
   --user USER            Login user configured by the cloud image (default: ubuntu).
   --dot-jay-ref REF      Override the pinned dot-jay commit or release ref.
   --dot-jay-repo URL     Override the dot-jay Git repository.
+  --dot-jay-bundle-url URL
+                         Override the released dot-jay runtime bundle URL.
+  --dot-jay-bundle-sha256 SHA256
+                         Override the runtime bundle checksum.
   --swap-gib SIZE        OCI emergency swap size, 0 through 16 (default: 2).
   --dry-run              Print the resolved provisioning plan without changing the host.
   --version              Show the jlx-cloud version.
@@ -65,11 +81,25 @@ while (($#)); do
     --dot-jay-ref)
       [[ $# -ge 2 ]] || fail "--dot-jay-ref requires a value"
       DOT_JAY_REF="$2"
+      GIT_SOURCE_EXPLICIT=true
       shift 2
       ;;
     --dot-jay-repo)
       [[ $# -ge 2 ]] || fail "--dot-jay-repo requires a value"
       DOT_JAY_REPO="$2"
+      GIT_SOURCE_EXPLICIT=true
+      shift 2
+      ;;
+    --dot-jay-bundle-url)
+      [[ $# -ge 2 ]] || fail "--dot-jay-bundle-url requires a value"
+      DOT_JAY_BUNDLE_URL="$2"
+      BUNDLE_SOURCE_EXPLICIT=true
+      shift 2
+      ;;
+    --dot-jay-bundle-sha256)
+      [[ $# -ge 2 ]] || fail "--dot-jay-bundle-sha256 requires a value"
+      DOT_JAY_BUNDLE_SHA256="$2"
+      BUNDLE_SOURCE_EXPLICIT=true
       shift 2
       ;;
     --swap-gib)
@@ -102,6 +132,34 @@ done
 [[ -n "${TARGET_USER}" ]] || fail "--user must not be blank"
 [[ -n "${DOT_JAY_REPO}" ]] || fail "--dot-jay-repo must not be blank"
 [[ -n "${DOT_JAY_REF}" ]] || fail "--dot-jay-ref must not be blank"
+[[ "${GIT_SOURCE_EXPLICIT}" == false || "${BUNDLE_SOURCE_EXPLICIT}" == false ]] || \
+  fail "Git source overrides cannot be combined with bundle source overrides"
+
+USE_DOT_JAY_BUNDLE=true
+if [[ "${GIT_SOURCE_EXPLICIT}" == true ]]; then
+  USE_DOT_JAY_BUNDLE=false
+else
+  [[ -n "${DOT_JAY_BUNDLE_URL}" ]] || fail "--dot-jay-bundle-url must not be blank"
+  [[ "${DOT_JAY_BUNDLE_SHA256}" =~ ^[0-9a-fA-F]{64}$ ]] || \
+    fail "--dot-jay-bundle-sha256 must contain 64 hexadecimal characters"
+fi
+
+if [[ "${COMMAND}" == "render" ]]; then
+  [[ "${DRY_RUN}" == false ]] || fail "--dry-run cannot be combined with render"
+  [[ "${GIT_SOURCE_EXPLICIT}" == false && "${BUNDLE_SOURCE_EXPLICIT}" == false ]] || \
+    fail "dot-jay source overrides are not supported by render"
+
+  render_args=(
+    --provider "${PROVIDER}"
+    --user "${TARGET_USER}"
+    --swap-gib "${SWAP_GIB}"
+  )
+  if [[ "${HOST_MODE}" == true ]]; then
+    render_args+=(--host)
+  fi
+
+  exec python3 "${SCRIPT_DIR}/scripts/render-cloud-init.py" "${render_args[@]}"
+fi
 
 DOT_JAY_PROFILE="jlx-cloud"
 if [[ "${HOST_MODE}" == true ]]; then
@@ -112,8 +170,14 @@ if [[ "${DRY_RUN}" == true ]]; then
   printf 'provider=%s\n' "${PROVIDER}"
   printf 'profile=%s\n' "${DOT_JAY_PROFILE}"
   printf 'target-user=%s\n' "${TARGET_USER}"
-  printf 'dot-jay-repo=%s\n' "${DOT_JAY_REPO}"
   printf 'dot-jay-ref=%s\n' "${DOT_JAY_REF}"
+  if [[ "${USE_DOT_JAY_BUNDLE}" == true ]]; then
+    printf 'dot-jay-source=bundle\n'
+    printf 'dot-jay-bundle-url=%s\n' "${DOT_JAY_BUNDLE_URL}"
+  else
+    printf 'dot-jay-source=git\n'
+    printf 'dot-jay-repo=%s\n' "${DOT_JAY_REPO}"
+  fi
   if [[ "${PROVIDER}" == "oci" ]]; then
     printf 'swap-gib=%s\n' "${SWAP_GIB}"
   fi
@@ -125,9 +189,19 @@ fi
 common_args=(
   --user "${TARGET_USER}"
   --profile "${DOT_JAY_PROFILE}"
-  --dot-jay-repo "${DOT_JAY_REPO}"
   --dot-jay-ref "${DOT_JAY_REF}"
 )
+if [[ "${USE_DOT_JAY_BUNDLE}" == true ]]; then
+  common_args+=(
+    --dot-jay-bundle-url "${DOT_JAY_BUNDLE_URL}"
+    --dot-jay-bundle-sha256 "${DOT_JAY_BUNDLE_SHA256}"
+  )
+else
+  common_args+=(
+    --dot-jay-repo "${DOT_JAY_REPO}"
+    --dot-jay-bundle-url ""
+  )
+fi
 
 case "${PROVIDER}" in
   ubuntu)
