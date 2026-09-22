@@ -39,7 +39,7 @@ assert_contains "${oci_plan}" "profile=jlx-cloud-host"
 assert_contains "${oci_plan}" "swap-gib=4"
 
 version_output="$("${REPO_DIR}/jlx-cloud" --version)"
-assert_contains "${version_output}" "jlx-cloud 0.1.1"
+assert_contains "${version_output}" "jlx-cloud 0.1.2"
 
 if "${REPO_DIR}/jlx-cloud" --provider invalid --dry-run >/dev/null 2>&1; then
   fail "Invalid providers must fail"
@@ -54,7 +54,7 @@ grep -q -- '--firewall external' "${REPO_DIR}/scripts/bootstrap-oci.sh" || \
 
 for config in "${REPO_DIR}"/cloud-init/*.yaml; do
   grep -q '^#cloud-config$' "${config}" || fail "${config} is missing the cloud-config header"
-  grep -q 'v0.1.1' "${config}" || fail "${config} does not pin the jlx-cloud release"
+  grep -q 'v0.1.2' "${config}" || fail "${config} does not pin the jlx-cloud release"
   if grep -q 'github_pat_' "${config}"; then
     fail "${config} contains a PAT-shaped value"
   fi

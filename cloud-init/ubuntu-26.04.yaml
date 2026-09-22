@@ -1,5 +1,5 @@
 #cloud-config
-# General Ubuntu 26.04 LTS bootstrap using the immutable jlx-cloud v0.1.1 release.
+# General Ubuntu 26.04 LTS bootstrap using the immutable jlx-cloud v0.1.2 release.
 package_update: true
 package_upgrade: true
 ssh_pwauth: false
@@ -12,7 +12,7 @@ packages:
   - sudo
 
 runcmd:
-  - [bash, -lc, 'set -Eeuo pipefail; checkout=/opt/jlx-cloud; if [[ -e "${checkout}" && ! -d "${checkout}/.git" ]]; then echo "${checkout} exists but is not a Git checkout" >&2; exit 1; fi; if [[ ! -d "${checkout}/.git" ]]; then git clone --depth 1 --branch v0.1.1 https://github.com/annaduraij/jlx-cloud.git "${checkout}"; fi; test "$(git -C "${checkout}" describe --tags --exact-match)" = v0.1.1; chown -R root:root "${checkout}"; chmod -R go-w "${checkout}"']
+  - [bash, -lc, 'set -Eeuo pipefail; checkout=/opt/jlx-cloud; if [[ -e "${checkout}" && ! -d "${checkout}/.git" ]]; then echo "${checkout} exists but is not a Git checkout" >&2; exit 1; fi; if [[ ! -d "${checkout}/.git" ]]; then git clone --depth 1 --branch v0.1.2 https://github.com/annaduraij/jlx-cloud.git "${checkout}"; fi; test "$(git -C "${checkout}" describe --tags --exact-match)" = v0.1.2; chown -R root:root "${checkout}"; chmod -R go-w "${checkout}"']
   - [/opt/jlx-cloud/jlx-cloud, --provider, ubuntu, --user, ubuntu]
 
 final_message: "jlx-cloud Ubuntu final stage ended after $UPTIME seconds; verify cloud-init status"

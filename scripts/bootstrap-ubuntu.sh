@@ -110,7 +110,8 @@ done
 [[ -n "${DOT_JAY_REPO}" && -n "${DOT_JAY_REF}" ]] || \
   fail "The dot-jay repository and ref must not be blank"
 
-# shellcheck disable=SC1091 -- /etc/os-release is the standard local OS identity file.
+# /etc/os-release is the standard local OS identity file.
+# shellcheck disable=SC1091
 source /etc/os-release
 [[ "${ID:-}" == "ubuntu" ]] || fail "This bootstrap supports Ubuntu only; detected '${ID:-unknown}'"
 [[ "${VERSION_ID:-}" == "${EXPECTED_UBUNTU_VERSION}" ]] || \
