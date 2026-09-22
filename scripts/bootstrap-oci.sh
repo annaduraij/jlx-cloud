@@ -9,7 +9,8 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
-# shellcheck disable=SC1091 -- defaults.env is part of this repository's trusted interface.
+# defaults.env is part of this repository's trusted interface.
+# shellcheck disable=SC1091
 source "${REPO_DIR}/config/defaults.env"
 
 TARGET_USER="ubuntu"

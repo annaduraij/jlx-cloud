@@ -47,7 +47,7 @@ add `--host` to the second `runcmd` list in the selected YAML file:
 - [/opt/jlx-cloud/jlx-cloud, --provider, oci, --user, ubuntu, --host, --swap-gib, '2']
 ```
 
-The templates clone the immutable `v0.1.0` jlx-cloud release. jlx-cloud then
+The templates clone the immutable `v0.1.1` jlx-cloud release. jlx-cloud then
 checks out the full dot-jay commit pinned in `config/defaults.env`; it does not
 follow dot-jay's moving default branch.
 
